@@ -1,0 +1,12 @@
+<%- include('partials/header'); %> 
+<!-- ejs layouts -->
+<h1>Home</h1>
+<p> <%= homeStartingContent %></p>
+<% posts.forEach((i)=>{ %>
+    <!-- let shortBody=i.body.substring(0,Math.min(100,body.length)) -->
+    <h1><%= i.title %></h1>
+    <p><%= i.body.substring(0,Math.min(100,i.body.length))+" ..." %> <a href="/posts/<%=i.title%>">Read More</a></p>
+
+<%}) %>
+
+<%- include('partials/footer'); %>
