@@ -1,11 +1,12 @@
 
 const express = require("express");
+const Mongoose = require("mongoose");
+Mongoose.connect("mongodb://localhost:27017/blogposts")
+
 // const bodyParser = require("body-parser"); 
 //Body parser  is deprecated, we can now get body using express only!!!
 const ejs = require("ejs");
 const _ = require("lodash")
-
-const posts=[];
 
 const homeStartingContent = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
 const aboutContent = "Hac habitasse platea dictumst vestibulum rhoncus est pellentesque. Dictumst vestibulum rhoncus est pellentesque elit ullamcorper. Non diam phasellus vestibulum lorem sed. Platea dictumst quisque sagittis purus sit. Egestas sed sed risus pretium quam vulputate dignissim suspendisse. Mauris in aliquam sem fringilla. Semper risus in hendrerit gravida rutrum quisque non tellus orci. Amet massa vitae tortor condimentum lacinia quis vel eros. Enim ut tellus elementum sagittis vitae. Mauris ultrices eros in cursus turpis massa tincidunt dui.";
@@ -15,48 +16,83 @@ const app = express();
 
 app.set('view engine', 'ejs');
 
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-app.get("/",(req,res)=>{
-  res.render("home",{homeStartingContent:homeStartingContent,posts:posts})
+//db schema
+const blogSchema = {
+  title: String,
+  body: String
+}
+const Post = Mongoose.model("Post", blogSchema);
+
+const post1 = new Post({
+  title: "Testing",
+  body: "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Accusantium incidunt ab rem esse? Hic porro molestiae ea sint esse consectetur, perspiciatis libero error repellat eveniet dolores quo ratione, rerum ipsum!"
 })
-app.get("/about",(req,res)=>{
-  res.render("about",{aboutContent:aboutContent})
+
+// post1.save();
+
+
+app.get("/", (req, res) => {
+  Post.find({}, (err, postArray) => {
+    if (!err) {
+
+
+      res.render("home", { homeStartingContent, posts: postArray })
+    }
+  })
 })
-app.get("/contact",(req,res)=>{
+app.get("/about", (req, res) => {
+  res.render("about", { aboutContent: aboutContent })
+})
+app.get("/contact", (req, res) => {
   // res.render("contact",{contactContent:contactContent})
-   //both params are same, we just write like =>
-  res.render("contact",{contactContent}) 
+  //both params are same, we just write like =>
+  res.render("contact", { contactContent })
 })
-app.get("/compose",(req,res)=>{
+app.get("/compose", (req, res) => {
   res.render("compose")
 })
-app.get("/posts/:category",(req,res)=>{
-  // console.log(req.params.category)
-  // console.log(posts)
-  const requestedTitle=_.lowerCase(req.params.category)
-  posts.forEach((item)=>{ //looking in the posts array if there is a title name same as category requested by user
-    const storedTitle = _.lowerCase(item.title) //.lowerCase also removes _ and - from either ends of string
-    if(storedTitle == requestedTitle){
-      // console.log("Match Found!!!");
-      res.render("post",{customPostTitle: item.title,customPostBody: item.body})
+app.get("/posts/:category", (req, res) => {
+
+  // const requestedTitle = _.lowerCase(req.params.category)
+  const requestedTitle = req.params.category
+  //find a document having title as requestedTitle
+  Post.find({title:requestedTitle},(err,foundPost)=>{ //this returns an array with one element
+    if(err){
+      console.log(err);
+    }else{
+      res.render("post", { customPostTitle: foundPost[0].title, customPostBody: foundPost[0].body })
+      
     }
   })
   
-  //LoDash modules
-  // res.redirect("/")
 
 })
-app.post("/compose",(req,res)=>{
-  let postTitle=req.body.postTitle //postTitle is name attribute of input tag
-  let postBody=req.body.postBody //postBody is name attribute of input tag
-  const post={
+app.post("/compose", (req, res) => {
+  let postTitle = req.body.postTitle //postTitle is name attribute of input tag
+  let postBody = req.body.postBody //postBody is name attribute of input tag
+  const newPost = new Post({
     title: postTitle,
     body: postBody
-  };
-  posts.push(post);
-  res.redirect("/compose");
+  });
+  newPost.save((err)=>{
+    if(!err){
+
+      res.redirect("/");
+    }
+  });
+})
+
+app.post("/deletePost",(req,res)=>{
+  let deleteTitle=req.body.deletePostBtn;
+  Post.deleteOne({ title: deleteTitle }).then(function(){
+    console.log("Post deleted"); // Success
+  }).catch(function(error){
+      console.log(error); // Failure
+  });
+  res.redirect("/")
 })
 
 
@@ -68,7 +104,6 @@ app.post("/compose",(req,res)=>{
 
 
 
-
-app.listen(3000, function() {
+app.listen(3000, function () {
   console.log("Server started on port 3000");
 });

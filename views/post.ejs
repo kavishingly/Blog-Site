@@ -1,4 +1,7 @@
 <%- include("partials/header")%>
 <h1> <%= customPostTitle%> </h1>
 <p> <%= customPostBody %> </p>
+<form action="/deletePost" method="POST">
+    <button class="btn btn-danger" type="submit" name="deletePostBtn" value="<%= customPostTitle%>">Delete Post</button>
+</form>
 <%- include("partials/footer")%>
